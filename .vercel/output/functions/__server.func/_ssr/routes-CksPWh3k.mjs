@@ -2,7 +2,7 @@ import { i as __toESM } from "../_runtime.mjs";
 import { K as require_react, b as require_jsx_runtime } from "../_libs/@tanstack/react-router+[...].mjs";
 import { a as Mic, c as BookOpen, i as PenLine, o as MessageCircle, r as Square, s as House, t as Volume2 } from "../_libs/lucide-react.mjs";
 import { t as clsx } from "../_libs/clsx.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-Dv9Nvkgt.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CksPWh3k.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var ayahs = {
@@ -1391,6 +1391,16 @@ function HomeView({ onOpen, onGuide }) {
 				className: "panel p-5 md:p-6",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
 					className: "text-2xl text-emerald-deep",
+					children: "من أيام الدورة"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "mt-2",
+					children: "رُتبت الفكرة في جيمناي، ثم نُقل الشرح الثابت إلى هذا الدرس التفاعلي. ما أُخذ في اليوم الثاني — مهارات كلود وربط أوفيس ٣٦٥ وجوجل درايف — خارج هذا الملف، فلا يُعرض على أنه مدمج هنا."
+				})]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+				className: "panel p-5 md:p-6",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", {
+					className: "text-2xl text-emerald-deep",
 					children: "عرض في ربع ساعة"
 				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("ol", {
 					className: "mt-3 space-y-3",
@@ -1434,12 +1444,23 @@ function arNum(value) {
 function arabicFold(input) {
 	return input.replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, "").replace(/[أإآٱ]/g, "ا").replace(/ؤ/g, "و").replace(/ئ/g, "ي").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/[^\u0621-\u064A\s]/g, "").replace(/\s+/g, " ").trim();
 }
+function stem(word) {
+	return word.replace(/^(ال|و|ف|ب|ل)/, "");
+}
+function closeWord(heard, expected) {
+	if (heard === expected) return true;
+	const shorter = heard.length < expected.length ? heard : expected;
+	const longer = heard.length < expected.length ? expected : heard;
+	if (shorter.length < 3) return false;
+	if (!longer.includes(shorter)) return false;
+	return shorter.length / longer.length >= .66;
+}
 function phraseScore(heard, expected) {
-	const heardWords = arabicFold(heard).split(" ").filter(Boolean);
-	const expectedWords = arabicFold(expected).split(" ").filter((word) => word.length >= 2);
+	const heardWords = arabicFold(heard).split(" ").map(stem).filter((word) => word.length >= 2);
+	const expectedWords = arabicFold(expected).split(" ").map(stem).filter((word) => word.length >= 2);
 	if (!expectedWords.length || !heardWords.length) return 0;
 	let hit = 0;
-	for (const word of expectedWords) if (heardWords.some((said) => said === word || said.includes(word) || word.includes(said))) hit += 1;
+	for (const word of expectedWords) if (heardWords.some((said) => closeWord(said, word))) hit += 1;
 	return hit / expectedWords.length;
 }
 var LABELS = {
@@ -1472,6 +1493,45 @@ function judgeText(text, correct) {
 	}
 	if ((correct === "idgham-gh" || correct === "idgham-nogh") && folded.includes("ادغام") && !folded.includes("غن")) return "partial";
 	return (LABELS[correct] ?? []).some((key) => folded.includes(arabicFold(key))) ? "right" : "wrong";
+}
+/** Fixed calm female voice (Liora, Arabic). Same on every presentation laptop. */
+var clips = {
+	welcome: "/voice/welcome.mp3",
+	praise: "/voice/praise.mp3",
+	gentle: "/voice/gentle.mp3",
+	near: "/voice/near.mp3",
+	listen: "/voice/listen.mp3",
+	heard: "/voice/heard.mp3",
+	retry: "/voice/retry.mp3",
+	done: "/voice/done.mp3"
+};
+var current = null;
+function playNoona(clip) {
+	if (typeof Audio === "undefined") return;
+	current?.pause();
+	const audio = new Audio(clips[clip]);
+	current = audio;
+	audio.play().catch(() => {});
+}
+var femaleHint = /female|woman|hoda|salma|laila|layla|maysa|zeina|amira|noor|noura|sara|hala|lina/i;
+/** Long explanations only. Reactions use the fixed clips above. */
+function speakArabic(text) {
+	if (typeof speechSynthesis === "undefined") return;
+	const run = () => {
+		const utter = new SpeechSynthesisUtterance(text);
+		utter.lang = "ar-SA";
+		utter.rate = .9;
+		utter.pitch = 1.04;
+		const arabic = speechSynthesis.getVoices().filter((voice) => voice.lang.toLowerCase().startsWith("ar"));
+		utter.voice = arabic.find((voice) => femaleHint.test(voice.name)) ?? arabic[0];
+		speechSynthesis.cancel();
+		speechSynthesis.speak(utter);
+	};
+	if (speechSynthesis.getVoices().length === 0) {
+		speechSynthesis.addEventListener("voiceschanged", run, { once: true });
+		return;
+	}
+	run();
 }
 function AyahText({ text, focus }) {
 	if (!focus) return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
@@ -1567,6 +1627,74 @@ function ListenButton({ surah, ayah, label = "تلاوة الحصري", onPlay, 
 		]
 	});
 }
+/** A short gold-and-emerald burst. Stays off when the student prefers less motion. */
+function Fireworks({ token }) {
+	const ref = (0, import_react.useRef)(null);
+	(0, import_react.useEffect)(() => {
+		if (!token) return;
+		const canvas = ref.current;
+		if (!canvas) return;
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+		const dpr = Math.min(window.devicePixelRatio || 1, 2);
+		canvas.width = window.innerWidth * dpr;
+		canvas.height = window.innerHeight * dpr;
+		const colors = [
+			"#8a6424",
+			"#c4a15a",
+			"#1e4a3a",
+			"#f4e6c8",
+			"#fffaf3"
+		];
+		const sparks = [];
+		function burst(cx, cy) {
+			for (let i = 0; i < 36; i += 1) {
+				const angle = Math.PI * 2 * i / 36 + Math.random() * .25;
+				const speed = (2.1 + Math.random() * 3.2) * dpr;
+				sparks.push({
+					x: cx,
+					y: cy,
+					vx: Math.cos(angle) * speed,
+					vy: Math.sin(angle) * speed,
+					life: 1,
+					color: colors[i % colors.length] ?? "#8a6424",
+					size: (1.3 + Math.random() * 1.7) * dpr
+				});
+			}
+		}
+		burst(canvas.width * .5, canvas.height * .26);
+		burst(canvas.width * .24, canvas.height * .34);
+		burst(canvas.width * .76, canvas.height * .32);
+		let frame = 0;
+		const started = performance.now();
+		const tick = (now) => {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			for (const spark of sparks) {
+				spark.x += spark.vx;
+				spark.y += spark.vy;
+				spark.vy += .04 * dpr;
+				spark.life -= .014;
+				if (spark.life <= 0) continue;
+				ctx.globalAlpha = spark.life;
+				ctx.fillStyle = spark.color;
+				ctx.beginPath();
+				ctx.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2);
+				ctx.fill();
+			}
+			ctx.globalAlpha = 1;
+			if (now - started < 1600) frame = requestAnimationFrame(tick);
+			else ctx.clearRect(0, 0, canvas.width, canvas.height);
+		};
+		frame = requestAnimationFrame(tick);
+		return () => cancelAnimationFrame(frame);
+	}, [token]);
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("canvas", {
+		ref,
+		className: "pointer-events-none fixed inset-0 z-30",
+		"aria-hidden": true
+	});
+}
 function MajlisView() {
 	const [cardIndex, setCardIndex] = (0, import_react.useState)(0);
 	const [stepIndex, setStepIndex] = (0, import_react.useState)(0);
@@ -1575,6 +1703,8 @@ function MajlisView() {
 	const [listening, setListening] = (0, import_react.useState)(false);
 	const [micReady, setMicReady] = (0, import_react.useState)(false);
 	const [cued, setCued] = (0, import_react.useState)(false);
+	const [burst, setBurst] = (0, import_react.useState)(0);
+	const [mood, setMood] = (0, import_react.useState)("calm");
 	const opening = majlis[0].steps[0];
 	const [messages, setMessages] = (0, import_react.useState)([{
 		id: 1,
@@ -1621,6 +1751,7 @@ function MajlisView() {
 		setPhase("ask");
 		setCued(false);
 		setDraft("");
+		setMood("calm");
 		seq.current += 1;
 		const hello = nextStep === 0 ? `موضع جديد. ${asking.ask}` : asking.ask;
 		setMessages([{
@@ -1637,9 +1768,19 @@ function MajlisView() {
 	}
 	function finishAsk(verdict) {
 		if (verdict === "partial") {
+			setMood("kind");
+			playNoona("near");
 			say("noona", "إدغام، والباب صحيح. أبغنة أم بغير غنة؟ ينمو فيها غنة، واللام والراء عند حفص بلا غنة.");
 			lock.current = false;
 			return;
+		}
+		if (verdict === "right") {
+			setMood("glad");
+			setBurst((value) => value + 1);
+			playNoona("praise");
+		} else {
+			setMood("kind");
+			playNoona("gentle");
 		}
 		say("noona", verdict === "right" ? step.ok : step.no);
 		if (stepIndex < card.steps.length - 1) {
@@ -1673,15 +1814,27 @@ function MajlisView() {
 	}
 	function judgeRepeat(text) {
 		say("me", text);
-		if (phraseScore(text, card.expect) >= .55) say("noona", `سمعتُكِ تقولين: «${text}». ${card.heardOk}`);
-		else say("noona", `سمعتُكِ تقولين: «${text}». ${card.heardNo}`);
+		const score = phraseScore(text, card.expect);
+		if (score >= .72) {
+			setMood("glad");
+			playNoona("heard");
+			say("noona", `سمعتُكِ تقولين: «${text}». ${card.heardOk}`);
+		} else if (score >= .4) {
+			setMood("kind");
+			playNoona("near");
+			say("noona", `اقتربتِ. وصلني: «${text}». أعيدي بعد الحصري: ${card.repeat}`);
+		} else {
+			setMood("kind");
+			playNoona("retry");
+			say("noona", `وصلني: «${text}». ${card.heardNo}`);
+		}
 		setPhase("coach");
 	}
 	function startMic() {
 		const w = window;
 		const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
 		if (!Ctor) {
-			say("noona", "هذا المتصفح لا يفتح الميكروفون. اكتبي التكرار في السطر، أو كرري بصوتكِ في الصف بعد الحصري.");
+			say("noona", "هذا المتصفح لا يفتح الميكروفون، وغالباً يعمل في كروم. اكتبي التكرار في السطر، أو كرري بصوتكِ في الصف بعد الحصري.");
 			return;
 		}
 		recRef.current?.stop();
@@ -1714,169 +1867,169 @@ function MajlisView() {
 	}
 	function speakLast() {
 		const last = [...messages].reverse().find((msg) => msg.role === "noona");
-		if (!last || !("speechSynthesis" in window)) return;
-		const utter = new SpeechSynthesisUtterance(last.text);
-		utter.lang = "ar";
-		utter.rate = .95;
-		const voice = speechSynthesis.getVoices().find((item) => item.lang.toLowerCase().startsWith("ar"));
-		if (voice) utter.voice = voice;
-		speechSynthesis.cancel();
-		speechSynthesis.speak(utter);
+		if (!last) return;
+		speakArabic(last.text);
 	}
 	const choices = choicesOf(step.choiceIds);
+	const portrait = listening ? "/noona-listen.jpg" : mood === "glad" ? "/noona-happy.jpg" : "/noona-face.jpg";
+	const status = listening ? "تصغي إلى تكراركِ" : mood === "glad" ? "فرحة بإجابتكِ" : phase === "ask" ? "تسأل عن الآية" : "تصحّح بهدوء";
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-4",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "grid gap-4 lg:grid-cols-[16rem_1fr]",
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("aside", {
-				className: "panel flex items-center gap-3 p-3 lg:block lg:p-0",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
-					src: listening ? "/noona-listen.jpg" : "/noona-face.jpg",
-					alt: listening ? "نونة تصغي وأمامها كتاب" : "وجه نونة",
-					className: "h-20 w-20 rounded-full object-cover lg:h-72 lg:w-full lg:rounded-none"
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-					className: "lg:p-4",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "amiri text-3xl text-emerald-deep",
-							children: "نونة"
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "text-sm text-muted",
-							children: listening ? "تصغي إلى تكراركِ" : phase === "ask" ? "تسأل عن الآية" : "تصحّح وتلقّن"
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-							className: "mt-2 text-sm",
-							children: [
-								"الموضع ",
-								arNum(cardIndex + 1),
-								" من ",
-								arNum(majlis.length)
-							]
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-							className: "mt-3 flex gap-1",
-							children: majlis.map((item, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: index === cardIndex ? "h-2 w-6 rounded-full bg-emerald" : index < cardIndex ? "h-2 w-2 rounded-full bg-gold" : "h-2 w-2 rounded-full bg-line" }, item.id))
-						})
-					]
-				})]
-			}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: "space-y-4",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
-					className: "panel space-y-3 p-4 md:p-6",
-					children: [
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "text-sm font-medium text-gold",
-							children: card.kicker
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AyahText, {
-							text: ayahs[spot.ayahKey] ?? "",
-							focus: step.focus
-						}),
-						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-							className: "text-sm text-muted",
-							children: [
-								"سورة ",
-								spot.surahName,
-								" · الآية ",
-								arNum(spot.ayah)
-							]
-						})
-					]
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
-					className: "panel overflow-hidden",
-					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-						ref: scroller,
-						className: "max-h-80 space-y-3 overflow-y-auto p-4",
-						children: messages.map((msg) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-							className: msg.role === "noona" ? "bubble-noona me-8 px-4 py-3" : "bubble-me ms-8 px-4 py-3",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-								className: "mb-1 block text-xs opacity-70",
-								children: msg.role === "noona" ? "نونة" : "أنتِ"
-							}), msg.text]
-						}, msg.id))
-					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "space-y-3 border-t border-line p-3",
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Fireworks, { token: burst }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "grid gap-4 lg:grid-cols-[16rem_1fr]",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("aside", {
+					className: "panel flex items-center gap-3 p-3 lg:block lg:p-0",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+						src: portrait,
+						alt: listening ? "نونة تصغي وأمامها كتاب" : mood === "glad" ? "نونة مسرورة" : "وجه نونة",
+						className: clsx("h-20 w-20 rounded-full object-cover lg:h-72 lg:w-full lg:rounded-none", mood === "glad" ? "noona-pop" : "noona-float")
+					}, portrait + mood), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "lg:p-4",
 						children: [
-							phase === "ask" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-								className: "grid gap-2 sm:grid-cols-2",
-								children: choices.map((choice) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GhostButton, {
-									onClick: () => answer(choice.id, choice.label),
-									children: choice.label
-								}, choice.id))
-							}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "flex flex-col gap-2 sm:flex-row sm:flex-wrap",
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "amiri text-3xl text-emerald-deep",
+								children: "نونة"
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-sm text-muted",
+								children: status
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+								className: "mt-2 text-sm",
 								children: [
-									/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ListenButton, {
-										surah: spot.surah,
-										ayah: spot.ayah,
-										onPlay: cueListen,
-										quiet: true,
-										label: "اسمعي الحصري ثم كرري"
-									}),
-									listening ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(GhostButton, {
-										onClick: stopMic,
-										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Square, {
-											className: "h-4 w-4",
-											"aria-hidden": true
-										}), "إيقاف"]
-									}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(GhostButton, {
-										onClick: startMic,
-										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Mic, {
-											className: "h-4 w-4",
-											"aria-hidden": true
-										}), micReady ? "أكرر ورائها" : "الميكروفون غير متاح"]
-									}),
-									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(GhostButton, {
-										onClick: speakLast,
-										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Volume2, {
-											className: "h-4 w-4",
-											"aria-hidden": true
-										}), "شرح نونة"]
-									})
+									"الموضع ",
+									arNum(cardIndex + 1),
+									" من ",
+									arNum(majlis.length)
 								]
 							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
-								className: "flex gap-2",
-								onSubmit: (event) => {
-									event.preventDefault();
-									sendDraft();
-								},
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
-									value: draft,
-									onChange: (event) => setDraft(event.target.value),
-									placeholder: phase === "repeat" ? "أو اكتبي ما كررتِه" : "أو اكتبي الحكم",
-									className: "min-h-11 w-full rounded-control border border-line bg-paper px-3 text-ink",
-									"aria-label": "جوابكِ"
-								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PrimaryButton, {
-									type: "submit",
-									children: "إرسال"
-								})]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "flex flex-wrap gap-2",
-								children: [cardIndex > 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-									type: "button",
-									className: "min-h-11 px-2 text-sm text-muted",
-									onClick: () => openCard(cardIndex - 1, 0),
-									children: "السابق"
-								}) : null, cardIndex < majlis.length - 1 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-									type: "button",
-									className: "min-h-11 px-2 text-sm text-emerald",
-									onClick: () => openCard(cardIndex + 1, 0),
-									children: "الموضع التالي"
-								}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-									type: "button",
-									className: "min-h-11 px-2 text-sm text-emerald",
-									onClick: () => openCard(0, 0),
-									children: "أعيدي المجلس"
-								})]
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+								className: "mt-3 flex gap-1",
+								children: majlis.map((item, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: index === cardIndex ? "h-2 w-6 rounded-full bg-emerald" : index < cardIndex ? "h-2 w-2 rounded-full bg-gold" : "h-2 w-2 rounded-full bg-line" }, item.id))
 							})
 						]
 					})]
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "space-y-4",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("article", {
+						className: "panel space-y-3 p-4 md:p-6",
+						children: [
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+								className: "text-sm font-medium text-gold",
+								children: card.kicker
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsx)(AyahText, {
+								text: ayahs[spot.ayahKey] ?? "",
+								focus: step.focus
+							}),
+							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+								className: "text-sm text-muted",
+								children: [
+									"سورة ",
+									spot.surahName,
+									" · الآية ",
+									arNum(spot.ayah)
+								]
+							})
+						]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+						className: "panel overflow-hidden",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+							ref: scroller,
+							className: "max-h-80 space-y-3 overflow-y-auto p-4",
+							children: messages.map((msg) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+								className: msg.role === "noona" ? "bubble-noona me-8 px-4 py-3" : "bubble-me ms-8 px-4 py-3",
+								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+									className: "mb-1 block text-xs opacity-70",
+									children: msg.role === "noona" ? "نونة" : "أنتِ"
+								}), msg.text]
+							}, msg.id))
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "space-y-3 border-t border-line p-3",
+							children: [
+								phase === "ask" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+									className: "grid gap-2 sm:grid-cols-2",
+									children: choices.map((choice) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GhostButton, {
+										onClick: () => answer(choice.id, choice.label),
+										children: choice.label
+									}, choice.id))
+								}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "flex flex-col gap-2 sm:flex-row sm:flex-wrap",
+									children: [
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)(ListenButton, {
+											surah: spot.surah,
+											ayah: spot.ayah,
+											onPlay: cueListen,
+											quiet: true,
+											label: "اسمعي الحصري ثم كرري"
+										}),
+										listening ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(GhostButton, {
+											onClick: stopMic,
+											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Square, {
+												className: "h-4 w-4",
+												"aria-hidden": true
+											}), "إيقاف"]
+										}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(GhostButton, {
+											onClick: startMic,
+											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Mic, {
+												className: "h-4 w-4",
+												"aria-hidden": true
+											}), micReady ? "أكرر ورائها" : "الميكروفون غير متاح"]
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(GhostButton, {
+											onClick: speakLast,
+											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Volume2, {
+												className: "h-4 w-4",
+												"aria-hidden": true
+											}), "قراءة الشرح"]
+										})
+									]
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("form", {
+									className: "flex gap-2",
+									onSubmit: (event) => {
+										event.preventDefault();
+										sendDraft();
+									},
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+										value: draft,
+										onChange: (event) => setDraft(event.target.value),
+										placeholder: phase === "repeat" ? "أو اكتبي ما كررتِه" : "أو اكتبي الحكم",
+										className: "min-h-11 w-full rounded-control border border-line bg-paper px-3 text-ink",
+										"aria-label": "جوابكِ"
+									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PrimaryButton, {
+										type: "submit",
+										children: "إرسال"
+									})]
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "flex flex-wrap gap-2",
+									children: [cardIndex > 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+										type: "button",
+										className: "min-h-11 px-2 text-sm text-muted",
+										onClick: () => openCard(cardIndex - 1, 0),
+										children: "السابق"
+									}) : null, cardIndex < majlis.length - 1 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+										type: "button",
+										className: "min-h-11 px-2 text-sm text-emerald",
+										onClick: () => openCard(cardIndex + 1, 0),
+										children: "الموضع التالي"
+									}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+										type: "button",
+										className: "min-h-11 px-2 text-sm text-emerald",
+										onClick: () => openCard(0, 0),
+										children: "أعيدي المجلس"
+									})]
+								})
+							]
+						})]
+					})]
 				})]
-			})]
-		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TeacherNote, { card })]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(TeacherNote, { card })
+		]
 	});
 }
 function TeacherNote({ card }) {
@@ -1888,7 +2041,7 @@ function TeacherNote({ card }) {
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
 			className: "mt-2 text-sm",
 			children: [
-				"الميكروفون يطابق الألفاظ ولا يقيس زمن الغنة. الغنة تُضبط بالأذن مع الحصري، والتصحيح العلمي في جواب نونة. المطلوب تكراره هنا: ",
+				"التشجيع بصوت نونة الثابت على كل جهاز. قراءة الشرح الطويلة بصوت العربية في المتصفح إن وُجد، وغالباً في كروم. الميكروفون يطابق الألفاظ: إتقان من سبعة أعشار، واقتراب من أربعة أعشار، ولا يقيس زمن الغنة. المطلوب تكراره هنا: ",
 				card.repeat,
 				"."
 			]
@@ -1902,6 +2055,8 @@ function QuizView({ onMajlis }) {
 	const [correctCount, setCorrectCount] = (0, import_react.useState)(0);
 	const [done, setDone] = (0, import_react.useState)(false);
 	const [best, setBest] = (0, import_react.useState)(null);
+	const [burst, setBurst] = (0, import_react.useState)(0);
+	const [lastRight, setLastRight] = (0, import_react.useState)(false);
 	(0, import_react.useEffect)(() => {
 		const stored = localStorage.getItem("noona-quiz-best");
 		if (stored) setBest(Number(stored));
@@ -1910,16 +2065,26 @@ function QuizView({ onMajlis }) {
 	function choose(id) {
 		if (picked || !question) return;
 		setPicked(id);
-		if (id === question.correct) setCorrectCount((count) => count + 1);
-		else setMisses((list) => [...list, {
-			prompt: question.prompt,
-			explain: question.explain
-		}]);
+		const right = id === question.correct;
+		setLastRight(right);
+		if (right) {
+			setCorrectCount((count) => count + 1);
+			setBurst((value) => value + 1);
+			playNoona("praise");
+		} else {
+			playNoona("gentle");
+			setMisses((list) => [...list, {
+				prompt: question.prompt,
+				explain: question.explain
+			}]);
+		}
 	}
 	function next() {
 		if (index + 1 >= quiz.length) {
 			const score = correctCount;
 			setDone(true);
+			playNoona(score >= quiz.length - 2 ? "done" : "praise");
+			setBurst((value) => value + 1);
 			setBest((prev) => {
 				const value = Math.max(prev ?? 0, score);
 				localStorage.setItem("noona-quiz-best", String(value));
@@ -1936,23 +2101,35 @@ function QuizView({ onMajlis }) {
 		setMisses([]);
 		setCorrectCount(0);
 		setDone(false);
+		setLastRight(false);
 	}
 	if (done) return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		className: "panel space-y-4 p-5 md:p-8",
 		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Fireworks, { token: burst }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "flex items-center gap-4",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+					src: correctCount >= quiz.length / 2 ? "/noona-happy.jpg" : "/noona-face.jpg",
+					alt: "نونة",
+					className: "noona-pop h-24 w-24 rounded-full object-cover"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-sm text-gold",
+					children: "نتيجة التدريب"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h2", {
+					className: "text-4xl text-emerald-deep",
+					children: [
+						correctCount,
+						" من ",
+						quiz.length
+					]
+				})] })]
+			}),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: correctCount === quiz.length ? "أحسنتِ. الباب مستقر، والجلسة التالية مع نونة تثبيت لفظ." : "كل خطأ بقي معه تصحيحه. أعيدي المواضع الهادئة، لا الدرجة." }),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-				className: "text-sm text-gold",
-				children: "نتيجة التدريب"
+				className: "text-sm text-muted",
+				children: best !== null ? `أحسن نتيجة محفوظة على هذا الجهاز: ${best} من ${quiz.length}.` : ""
 			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("h2", {
-				className: "text-4xl text-emerald-deep",
-				children: [
-					correctCount,
-					" من ",
-					quiz.length
-				]
-			}),
-			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { children: best !== null ? `أحسن نتيجة محفوظة على هذا الجهاز: ${best} من ${quiz.length}.` : "" }),
 			misses.length ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "space-y-3",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
@@ -1985,6 +2162,18 @@ function QuizView({ onMajlis }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
 		className: "space-y-4",
 		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Fireworks, { token: burst }),
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+				className: "panel flex items-center gap-3 p-3",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+					src: picked ? lastRight ? "/noona-happy.jpg" : "/noona-face.jpg" : "/noona-face.jpg",
+					alt: "نونة تتابع التدريب",
+					className: clsx("h-16 w-16 rounded-full object-cover", picked && lastRight ? "noona-pop" : "noona-float")
+				}, burst + index), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-sm",
+					children: !picked ? "خذي وقتكِ. الحرف الذي بعد النون هو الدليل." : lastRight ? "أحسنتِ. ثبّتي الحكم ثم كملي." : "لا بأس. التصحيح أمامكِ، وهو أهم من الدرجة."
+				})]
+			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "flex items-center justify-between text-sm text-muted",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: [
@@ -2051,11 +2240,11 @@ function QuestionCard({ question, picked, onChoose }) {
 				})
 			}),
 			picked ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-				className: clsx("rounded-control p-4", right ? "bg-emerald-soft" : "bg-clay-soft"),
+				className: clsx("rise rounded-control p-4", right ? "bg-emerald-soft" : "bg-clay-soft"),
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "font-medium",
-						children: right ? "صواب." : "يُصحَّح هكذا."
+						children: right ? "صواب." : "لا بأس. يُصحَّح هكذا."
 					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 						className: "mt-1",
@@ -2087,6 +2276,17 @@ function SharhView({ guideId, onGuide }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "space-y-5",
 		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("aside", {
+				className: "panel flex items-center gap-3 p-3",
+				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+					src: "/noona-face.jpg",
+					alt: "نونة",
+					className: "noona-float h-16 w-16 rounded-full object-cover"
+				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+					className: "text-sm",
+					children: "اختاري الحرف، ثم اسمعي الحصري قبل أن تحكمي. النطق يُضبط بالأذن لا بالتخمين."
+				})]
+			}),
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 				className: "flex gap-2 overflow-x-auto pb-1",
 				children: guides.map((item) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {

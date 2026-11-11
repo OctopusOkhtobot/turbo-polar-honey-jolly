@@ -89,6 +89,14 @@ export function HomeView({
       </section>
 
       <section className="panel p-5 md:p-6">
+        <h2 className="text-2xl text-emerald-deep">من أيام الدورة</h2>
+        <p className="mt-2">
+          رُتبت الفكرة في جيمناي، ثم نُقل الشرح الثابت إلى هذا الدرس التفاعلي. ما أُخذ في اليوم الثاني —
+          مهارات كلود وربط أوفيس ٣٦٥ وجوجل درايف — خارج هذا الملف، فلا يُعرض على أنه مدمج هنا.
+        </p>
+      </section>
+
+      <section className="panel p-5 md:p-6">
         <h2 className="text-2xl text-emerald-deep">عرض في ربع ساعة</h2>
         <ol className="mt-3 space-y-3">
           {steps.map((step, index) => (

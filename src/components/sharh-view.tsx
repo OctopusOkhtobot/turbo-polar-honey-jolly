@@ -20,6 +20,10 @@ export function SharhView({ guideId, onGuide }: { guideId: GuideId; onGuide: (id
 
   return (
     <div className="space-y-5">
+      <aside className="panel flex items-center gap-3 p-3">
+        <img src="/noona-face.jpg" alt="نونة" className="noona-float h-16 w-16 rounded-full object-cover" />
+        <p className="text-sm">اختاري الحرف، ثم اسمعي الحصري قبل أن تحكمي. النطق يُضبط بالأذن لا بالتخمين.</p>
+      </aside>
       <div className="flex gap-2 overflow-x-auto pb-1">
         {guides.map((item) => (
           <button

@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Mic, Square, Volume2 } from "lucide-react";
+import { clsx } from "clsx";
 import { ayahs } from "@/lib/tajweed/ayahs";
 import { arNum } from "@/lib/tajweed/audio";
 import { choicesOf, majlis, spotById, type MajlisCard } from "@/lib/tajweed/data";
 import { judgeText, phraseScore } from "@/lib/tajweed/judge";
+import { playNoona, speakArabic } from "@/lib/noona-voice";
 import { AyahText, ListenButton } from "./ayah-text";
+import { Fireworks } from "./fireworks";
 import { GhostButton, PrimaryButton } from "./ui";
 
 type Role = "noona" | "me";
@@ -19,6 +22,8 @@ export function MajlisView() {
   const [listening, setListening] = useState(false);
   const [micReady, setMicReady] = useState(false);
   const [cued, setCued] = useState(false);
+  const [burst, setBurst] = useState(0);
+  const [mood, setMood] = useState<"calm" | "glad" | "kind">("calm");
   const opening = majlis[0].steps[0];
   const [messages, setMessages] = useState<Msg[]>([
     { id: 1, role: "noona", text: `أنا نونة. الآية أمامكِ، وأنا أسأل. ${opening.ask}` },
@@ -61,6 +66,7 @@ export function MajlisView() {
     setPhase("ask");
     setCued(false);
     setDraft("");
+    setMood("calm");
     seq.current += 1;
     const hello =
       nextStep === 0
@@ -78,9 +84,19 @@ export function MajlisView() {
 
   function finishAsk(verdict: "right" | "partial" | "wrong") {
     if (verdict === "partial") {
+      setMood("kind");
+      playNoona("near");
       say("noona", "إدغام، والباب صحيح. أبغنة أم بغير غنة؟ ينمو فيها غنة، واللام والراء عند حفص بلا غنة.");
       lock.current = false;
       return;
+    }
+    if (verdict === "right") {
+      setMood("glad");
+      setBurst((value) => value + 1);
+      playNoona("praise");
+    } else {
+      setMood("kind");
+      playNoona("gentle");
     }
     say("noona", verdict === "right" ? step.ok : step.no);
     if (stepIndex < card.steps.length - 1) {
@@ -118,8 +134,19 @@ export function MajlisView() {
   function judgeRepeat(text: string) {
     say("me", text);
     const score = phraseScore(text, card.expect);
-    if (score >= 0.55) say("noona", `سمعتُكِ تقولين: «${text}». ${card.heardOk}`);
-    else say("noona", `سمعتُكِ تقولين: «${text}». ${card.heardNo}`);
+    if (score >= 0.72) {
+      setMood("glad");
+      playNoona("heard");
+      say("noona", `سمعتُكِ تقولين: «${text}». ${card.heardOk}`);
+    } else if (score >= 0.4) {
+      setMood("kind");
+      playNoona("near");
+      say("noona", `اقتربتِ. وصلني: «${text}». أعيدي بعد الحصري: ${card.repeat}`);
+    } else {
+      setMood("kind");
+      playNoona("retry");
+      say("noona", `وصلني: «${text}». ${card.heardNo}`);
+    }
     setPhase("coach");
   }
 
@@ -127,7 +154,7 @@ export function MajlisView() {
     const w = window as SpeechWindow;
     const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!Ctor) {
-      say("noona", "هذا المتصفح لا يفتح الميكروفون. اكتبي التكرار في السطر، أو كرري بصوتكِ في الصف بعد الحصري.");
+      say("noona", "هذا المتصفح لا يفتح الميكروفون، وغالباً يعمل في كروم. اكتبي التكرار في السطر، أو كرري بصوتكِ في الصف بعد الحصري.");
       return;
     }
     recRef.current?.stop();
@@ -162,27 +189,27 @@ export function MajlisView() {
 
   function speakLast() {
     const last = [...messages].reverse().find((msg) => msg.role === "noona");
-    if (!last || !("speechSynthesis" in window)) return;
-    const utter = new SpeechSynthesisUtterance(last.text);
-    utter.lang = "ar";
-    utter.rate = 0.95;
-    const voice = speechSynthesis.getVoices().find((item) => item.lang.toLowerCase().startsWith("ar"));
-    if (voice) utter.voice = voice;
-    speechSynthesis.cancel();
-    speechSynthesis.speak(utter);
+    if (!last) return;
+    speakArabic(last.text);
   }
 
   const choices = choicesOf(step.choiceIds);
-  const status = listening ? "تصغي إلى تكراركِ" : phase === "ask" ? "تسأل عن الآية" : "تصحّح وتلقّن";
+  const portrait = listening ? "/noona-listen.jpg" : mood === "glad" ? "/noona-happy.jpg" : "/noona-face.jpg";
+  const status = listening ? "تصغي إلى تكراركِ" : mood === "glad" ? "فرحة بإجابتكِ" : phase === "ask" ? "تسأل عن الآية" : "تصحّح بهدوء";
 
   return (
     <div className="space-y-4">
+      <Fireworks token={burst} />
       <div className="grid gap-4 lg:grid-cols-[16rem_1fr]">
         <aside className="panel flex items-center gap-3 p-3 lg:block lg:p-0">
           <img
-            src={listening ? "/noona-listen.jpg" : "/noona-face.jpg"}
-            alt={listening ? "نونة تصغي وأمامها كتاب" : "وجه نونة"}
-            className="h-20 w-20 rounded-full object-cover lg:h-72 lg:w-full lg:rounded-none"
+            key={portrait + mood}
+            src={portrait}
+            alt={listening ? "نونة تصغي وأمامها كتاب" : mood === "glad" ? "نونة مسرورة" : "وجه نونة"}
+            className={clsx(
+              "h-20 w-20 rounded-full object-cover lg:h-72 lg:w-full lg:rounded-none",
+              mood === "glad" ? "noona-pop" : "noona-float",
+            )}
           />
           <div className="lg:p-4">
             <p className="amiri text-3xl text-emerald-deep">نونة</p>
@@ -244,7 +271,7 @@ export function MajlisView() {
                   )}
                   <GhostButton onClick={speakLast}>
                     <Volume2 className="h-4 w-4" aria-hidden />
-                    شرح نونة
+                    قراءة الشرح
                   </GhostButton>
                 </div>
               )}
@@ -294,7 +321,8 @@ function TeacherNote({ card }: { card: MajlisCard }) {
     <details className="panel p-4">
       <summary className="font-medium text-emerald-deep">ملاحظة للمعلمة في هذا الموضع</summary>
       <p className="mt-2 text-sm">
-        الميكروفون يطابق الألفاظ ولا يقيس زمن الغنة. الغنة تُضبط بالأذن مع الحصري، والتصحيح العلمي في جواب نونة.
+        التشجيع بصوت نونة الثابت على كل جهاز. قراءة الشرح الطويلة بصوت العربية في المتصفح إن وُجد، وغالباً في كروم.
+        الميكروفون يطابق الألفاظ: إتقان من سبعة أعشار، واقتراب من أربعة أعشار، ولا يقيس زمن الغنة.
         المطلوب تكراره هنا: {card.repeat}.
       </p>
     </details>
